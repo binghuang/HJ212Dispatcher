@@ -11,7 +11,15 @@ static struct {
 } mn_fd[MAP_SIZE];
 
 static pthread_mutex_t map_mutex;
-static int map_index;
+
+void show_mn_fd(void)
+{
+    int i;
+
+    for (i = 0; i < MAP_SIZE; i++)
+        if (strlen(mn_fd[i].mn) != 0)
+            printf("%d: %s@%d\n", i, mn_fd[i].mn, mn_fd[i].fd);
+}
 
 void add_mn_fd(char * mn, int fd)
 {
@@ -35,8 +43,8 @@ void add_mn_fd(char * mn, int fd)
         if (strlen(mn_fd[i].mn) == 0)
             break;
 
-    memcpy(mn_fd[i++].mn, mn, strlen(mn));
-    mn_fd[i++].fd = fd;
+    memcpy(mn_fd[i].mn, mn, strlen(mn));
+    mn_fd[i].fd = fd;
 
     pthread_mutex_unlock(&map_mutex);
 }

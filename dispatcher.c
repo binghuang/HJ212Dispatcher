@@ -14,8 +14,13 @@
 #include "hj212.h"
 #include "main.h"
 
-static int dispatcher_fds[2] = {-1, -1};
-static int dispatcher_idx;
+typedef struct
+{
+    char name[8];
+    char serverAddr[INET_ADDRSTRLEN];
+    short port;
+    int fd;
+} dispatcher;
 
 void dispatcher_send(const char *buf, int len)
 {
@@ -30,17 +35,22 @@ void dispatcher_send(const char *buf, int len)
     }
 }
 
+static int init_dispatcher_socket(char *servaddr, short port);
 static void * dispatcher_thread(void *arg)
 {
-    int fd = (int)arg;
+    dispatcher *d = (dispatcher *)arg;
+    int fd = -1;
     char buf[1200];
     char mn[MN_SIZE];
     int len, device_fd;
     int ret = -1;
 
+    if ((fd = init_dispatcher_socket(d->serverAddr, d->port) < 0))
+        return (void *)-1;
+
     while (1) {
         memset(buf, 0, 1200);
-        if ((len = read(fd, buf, 1200)) < 0) {
+        if ((len = read(fd, buf, 1200)) <= 0) {
             close(fd);
             return (void *)-1;
         }
@@ -57,19 +67,65 @@ static void * dispatcher_thread(void *arg)
     return (void *)0;
 }
 
-void * start_dispatcher(int fd)
+static void * dispatcher_thread_create(void *arg)
 {
     pthread_t tid;
 
-    if (pthread_create(&tid, NULL, dispatcher_thread, (void *)fd)  < 0) {
-        perror("Failed to create dispatcher");
-        return (void *)0;
-    }
+    while (1) {
+        if (pthread_create(&tid, NULL, dispatcher_thread, arg)  < 0) {
+            perror("Failed to create dispatcher");
+            return (void *)-1;
+        }
 
-    return (void *)tid;
+        pthread_join(tid, NULL);
+    }
 }
 
-int init_dispatcher(char *ipaddr, short port)
+static dispatcher photon;
+static dispatcher other;
+
+int init_dispatcher(const char *name, char *servaddr, short port)
+{
+    pthread_t tid;
+    pthread_attr_t attr;
+
+    if (pthread_attr_init(&attr) < 0) {
+        perror("Failed to init thread attr");
+        return -1;
+    }
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) < 0) {
+        perror("Failed to set deatach state");
+        return -1;
+    }
+    if (name == NULL || name[0] == 0 || strlen(name) == 0)
+        return -1;
+
+    if (servaddr == NULL || servaddr[0] == 0 || strlen(servaddr) == 0)
+        return -1;
+
+    if (strlen(name) == strlen("photon") && strcmp(name, "photon") == 0) {
+        photon.port = port;
+        memset(photon.serverAddr, 0, INET_ADDRSTRLEN);
+        memcpy(photon.serverAddr, servaddr, strlen(servaddr));
+        if (pthread_create(&tid, NULL, dispatcher_thread_create, (void *)&photon)  < 0) {
+            perror("Failed to create dispatcher");
+            return -1;
+        }
+    } else {
+        other.port = port;
+        memset(other.serverAddr, 0, INET_ADDRSTRLEN);
+        memcpy(other.serverAddr, servaddr, strlen(servaddr));
+        if (pthread_create(&tid, NULL, dispatcher_thread_create, (void *)&other)  < 0) {
+            perror("Failed to create dispatcher");
+            return -1;
+        }
+    }
+    pthread_attr_destroy(&attr);
+
+    return 0;
+}
+
+static int init_dispatcher_socket(char *ipaddr, short port)
 {
     int fd = -1;
     char error_info[64];
@@ -104,8 +160,6 @@ int init_dispatcher(char *ipaddr, short port)
         perror(error_info);
         goto close_fd;
     }
-
-    dispatcher_fds[dispatcher_idx++] = fd;
 
     return fd;
 

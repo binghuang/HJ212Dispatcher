@@ -61,7 +61,7 @@ static void * gather_thread(void *arg)
     pthread_t tid;
     pthread_attr_t attr;
     int ret = -1;
-    
+
     while (1) {
         memset(&client_addr, 0, sizeof(struct sockaddr_in));
         client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
@@ -97,7 +97,7 @@ void * start_gather(int fd)
 {
     pthread_t tid;
 
-    if (pthread_create(&tid, NULL, gather_thread, (void *)fd)  < 0) {
+    if (pthread_create(&tid, NULL, gather_thread, fd)  < 0) {
         perror("Failed to create gather");
         return (void *)0;
     }
@@ -150,7 +150,7 @@ int init_gather(char *ifname, short port)
         goto close_fd;
     }
 
-    return 0;
+    return fd;
 
 close_fd:
     close(fd);
