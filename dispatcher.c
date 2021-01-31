@@ -71,6 +71,7 @@ static void * dispatcher_thread_create(void *arg)
         }
 
         pthread_join(tid, NULL);
+        sleep(2);
     }
 
     return (void *)0;
@@ -103,7 +104,7 @@ int init_dispatcher(const char *name, char *servaddr, short port)
         memset(photon.serverAddr, 0, INET_ADDRSTRLEN);
         memcpy(photon.serverAddr, servaddr, strlen(servaddr));
         memset(photon.name, 0, DISPATCHER_NAME_LEN);
-        memcpy(photon.name, name, DISPATCHER_NAME_PHOTON);
+        memcpy(photon.name, name, DISPATCHER_NAME_LEN);
         if (pthread_create(&tid, NULL, dispatcher_thread_create, (void *)&photon)  < 0) {
             perror("Failed to create dispatcher");
             return -1;
@@ -112,8 +113,8 @@ int init_dispatcher(const char *name, char *servaddr, short port)
         other.port = port;
         memset(other.serverAddr, 0, INET_ADDRSTRLEN);
         memcpy(other.serverAddr, servaddr, strlen(servaddr));
-        memset(photon.name, 0, DISPATCHER_NAME_LEN);
-        memcpy(photon.name, name, DISPATCHER_NAME_OTHER);
+        memset(other.name, 0, DISPATCHER_NAME_LEN);
+        memcpy(other.name, name, strlen(name));
         if (pthread_create(&tid, NULL, dispatcher_thread_create, (void *)&other)  < 0) {
             perror("Failed to create dispatcher");
             return -1;
