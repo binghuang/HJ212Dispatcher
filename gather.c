@@ -170,3 +170,15 @@ void deinit_gather(void *handle, int fd)
     if (fd >= 0)
         close(fd);
 }
+
+void cancel_gather(void *handle)
+{
+    pthread_t tid;
+
+    if (handle) {
+        tid = (pthread_t)handle;
+        if (pthread_cancel(tid) < 0) {
+            perror("Failed to cancel gather");
+        }
+    }
+}

@@ -18,6 +18,17 @@ int main(int argc, char **argv)
     if (!handle) {
         printf("Start gather failed\n");
         deinit_gather(handle, fd);
+        exit(EXIT_FAILURE);
+    }
+
+    if (init_dispatcher(DISPATCHER_NAME_PHOTON, "127.0.0.1", 9091) < 0) {
+        cancel_gather(handle);
+        deinit_gather(handle, fd);
+    }
+
+    if (init_dispatcher(DISPATCHER_NAME_OTHER, "127.0.0.1", 9092) < 0) {
+        cancel_gather(handle);
+        deinit_gather(handle, fd);
     }
 
     deinit_gather(handle, fd);
