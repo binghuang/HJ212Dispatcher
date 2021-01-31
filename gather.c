@@ -162,10 +162,11 @@ void deinit_gather(void *handle, int fd)
 {
     pthread_t tid;
 
-    if (NULL == handle || fd < 0)
-        return;
+    if (handle) {
+        tid = (pthread_t)handle; 
+        pthread_join(tid, NULL);
+    }
 
-    tid = (pthread_t)handle; 
-    pthread_join(tid, NULL);
-    close(fd);
+    if (fd >= 0)
+        close(fd);
 }

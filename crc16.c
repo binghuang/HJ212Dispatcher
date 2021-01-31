@@ -7,7 +7,7 @@
 *  返 回 值:
 *  返回 CRC16 校验码
 ****************************************************************************************/
-unsigned int CRC16_Checkout (unsigned char *puchMsg, unsigned int usDataLen)
+unsigned int CRC16_Checkout (char *puchMsg, int usDataLen)
 {
     unsigned int i,j,crc_reg,check;
     crc_reg = 0xFFFF;

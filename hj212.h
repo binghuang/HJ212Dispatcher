@@ -3,6 +3,6 @@
 
 #define MN_SIZE 24
 
-int hj212_valid(const char *packet, char mn[]);
+int hj212_valid(char *packet, char mn[]);
 
 #endif

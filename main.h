@@ -1,9 +1,13 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-void dispatcher_send(const char *buf, int len);
+int init_gather(char *ifname, short port);
+void * start_gather(int fd);
+void deinit_gather(void *handle, int fd);
 void gather_send(int device_fd, const char *buf, int len);
 
-unsigned int CRC16_Checkout ( unsigned char *puchMsg, unsigned int usDataLen);
+void dispatcher_send(const char *buf, int len);
+
+unsigned int CRC16_Checkout (char *puchMsg, int usDataLen);
 
 #endif

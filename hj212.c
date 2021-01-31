@@ -4,7 +4,7 @@
 #include "main.h"
 #include "hj212.h"
 
-int hj212_valid(const char *packet, char mn[])
+int hj212_valid(char *packet, char mn[])
 {
     char crc[6] = {'0', 'x', 0, 0, 0, 0};
     unsigned int crc16 = 0;

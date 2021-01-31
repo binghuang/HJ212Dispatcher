@@ -1,35 +1,26 @@
 #include <stdio.h>
-#include <pthread.h>
+#include <stdlib.h>
 
-extern void * start_server(void *arg);
-extern void * start_client(void *arg);
+#include "main.h"
 
 int main(int argc, char **argv)
 {
-    int ret = -1;
-    pthread_t gather, older, newer;
+    int fd = -1;
 
-    ret = pthread_create(&gather, NULL, start_server, NULL);
-    if (ret < 0) {
-        perror("cannot create gather:");
-        return -1;
+    fd = init_gather("lo", 9090);
+    if (fd < 0) {
+        printf("Init gather failed\n");
+        exit(EXIT_FAILURE);
     }
 
-    ret = pthread_create(&older, NULL, start_client, NULL);
-    if (ret < 0) {
-        perror("cannot create older:");
-        return -1;
+    void *handle = NULL;
+    handle = start_gather(fd);
+    if (!handle) {
+        printf("Start gather failed\n");
+        deinit_gather(handle, fd);
     }
 
-    ret = pthread_create(&newer, NULL, start_client, NULL);
-    if (ret < 0) {
-        perror("cannot create newer:");
-        return -1;
-    }
-
-    pthread_join(gather, NULL);
-    pthread_join(older, NULL);
-    pthread_join(newer, NULL);
+    deinit_gather(handle, fd);
 
     return 0;
 }

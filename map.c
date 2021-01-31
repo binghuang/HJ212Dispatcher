@@ -51,8 +51,8 @@ void del_mn_fd(int fd)
     pthread_mutex_lock(&map_mutex);
 
     for (i = 0; i < MAP_SIZE; i++) {
-        if (strlen(mn_fd[i].fd) == fd) {
-            memcpy(mn_fd[i].mn, 0, strlen(MN_SIZE));
+        if (mn_fd[i].fd == fd) {
+            memset(mn_fd[i].mn, 0, MN_SIZE);
             mn_fd[i].fd = 0;
         }
     }
@@ -65,7 +65,7 @@ int find_fd(char * mn)
     int i;
 
     if (mn == NULL)
-        return;
+        return -1;
 
     pthread_mutex_lock(&map_mutex);
 
