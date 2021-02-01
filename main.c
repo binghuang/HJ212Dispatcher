@@ -11,11 +11,11 @@ int main(int argc, char **argv)
     int fd = -1;
     char opt;
     char photon_addr[INET_ADDRSTRLEN] = { 0 };
-    short photon_port = 0;
+    short photon_port = -1;
     char other_addr[INET_ADDRSTRLEN] = { 0 };
-    short other_port = 0;
+    short other_port = -1;
     char serv_if[IF_NAMESIZE] = { 0 };
-    short serv_port = 0;
+    short serv_port = -1;
     int i;
 
 	for (i = 1; i < argc; i++) {
@@ -62,6 +62,12 @@ int main(int argc, char **argv)
 
    printf("photon_addr=%s; photon_port=%d; other_addr=%s; other_port=%d; serv_if=%s; serv_port=%d;\n",
 		   photon_addr, photon_port, other_addr, other_port, serv_if, serv_port);
+
+    if (strlen(photon_addr) == 0 || photon_port <= 0 ||
+        strlen(other_addr) == 0 || other_port <= 0 ||
+        strlen(serv_if) == 0 || serv_port <= 0
+        )
+        return 0;
 
     if (init_mn_fd() < 0)
         return -1;
