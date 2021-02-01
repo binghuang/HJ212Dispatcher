@@ -18,9 +18,11 @@ void gather_send(int device_fd, const char *buf, int len)
 {
     int ret;
 
-    ret = write(device_fd, buf, len);
-    if (ret < 0)
-        perror("Failed to send");
+    if (device_fd >= 0) {
+        ret = write(device_fd, buf, len);
+        if (ret < 0)
+            perror("Failed to send");
+    }
 }
 
 static void *machine_thread(void *arg)
@@ -34,6 +36,7 @@ static void *machine_thread(void *arg)
     while (1) {
         memset(buf, 0, 1200);
         if ((len = read(fd, buf, 1200)) <= 0) {
+            printf("client close...\n");
             del_mn_fd(fd);
             close(fd);
             return (void *)-1;
@@ -44,8 +47,12 @@ static void *machine_thread(void *arg)
         if (ret != 0)
             continue;
 
+        printf("%s, fd = %d\n", __FUNCTION__, fd);
+
+        printf("%s, add_mn_fd\n", __FUNCTION__);
         add_mn_fd(mn, fd);
 
+        printf("%s, dispatcher_send\n", __FUNCTION__);
         dispatcher_send(buf, len);
     }
     return (void *)0;
@@ -64,6 +71,7 @@ static void * gather_thread(void *arg)
 
     while (1) {
         memset(&client_addr, 0, sizeof(struct sockaddr_in));
+        printf("accept connection.....\n");
         client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
         if (client_fd < 0) {
             perror("Failed to accept connection");
@@ -111,6 +119,7 @@ int init_gather(char *ifname, short port)
     char error_info[64];
     struct sockaddr_in addr;
     struct ifreq ifreq;
+    int reuse = 1;
     int ret = -1;
 
     if (NULL == ifname || 0 == ifname[0] || strlen(ifname) > IF_NAMESIZE) {
@@ -121,6 +130,12 @@ int init_gather(char *ifname, short port)
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
         perror("Failed to create gather socket");
+        goto close_fd;
+    }
+
+    ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+    if (ret < 0) {
+        perror("Failed to setsockopt");
         goto close_fd;
     }
 

@@ -2,10 +2,14 @@
 #include <stdlib.h>
 
 #include "main.h"
+#include "map.h"
 
 int main(int argc, char **argv)
 {
     int fd = -1;
+
+    if (init_mn_fd() < 0)
+        return -1;
 
     fd = init_gather("lo", 9090);
     if (fd < 0) {
