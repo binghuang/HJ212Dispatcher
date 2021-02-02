@@ -36,7 +36,14 @@ static void *machine_thread(void *arg)
     while (1) {
         memset(buf, 0, 1200);
         if ((len = read(fd, buf, 1200)) <= 0) {
-            printf("client close...\n");
+            perror("Failed to read from Client");
+            del_mn_fd(fd);
+            close(fd);
+            return (void *)-1;
+        }
+
+        if (write(fd, "a", 1) <= 0) {
+            perror("Failed to send to client");
             del_mn_fd(fd);
             close(fd);
             return (void *)-1;
