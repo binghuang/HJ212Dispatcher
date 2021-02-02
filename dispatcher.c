@@ -117,44 +117,45 @@ int init_dispatcher(const char *name, char *servaddr, short port)
         memcpy(other.serverAddr, servaddr, strlen(servaddr));
         memset(other.name, 0, DISPATCHER_NAME_LEN);
         memcpy(other.name, name, strlen(name));
+#if 0
         if (pthread_create(&tid, NULL, dispatcher_thread_create, (void *)&other)  < 0) {
             perror("Failed to create dispatcher");
             return -1;
         }
+#endif
     }
     pthread_attr_destroy(&attr);
 
     return 0;
 }
 
-static pthread_mutex_t dispatcher_photon_mutex;
 void dispatcher_send_photon(const char *buf, int len)
 {
     int i;
     int ret;
 
-    pthread_mutex_lock(&dispatcher_photon_mutex);
     if (photon.fd >= 0) {
         ret = write(photon.fd, buf, len);
         if (ret < 0)
             perror("Failed to dispatch");
     }
-    pthread_mutex_unlock(&dispatcher_photon_mutex);
 }
 
-static pthread_mutex_t dispatcher_other_mutex;
 void dispatcher_send_other(const char *buf, int len)
 {
-    int i;
-    int ret;
+    int fd = -1;
+    char buf[1200];
+    int ret = -1;
 
-    pthread_mutex_lock(&dispatcher_other_mutex);
-    if (other.fd >= 0) {
-        ret = write(other.fd, buf, len);
-        if (ret < 0)
-            perror("Failed to dispatch");
-    }
-    pthread_mutex_unlock(&dispatcher_other_mutex);
+    fd = init_dispatcher_socket(other.serverAddr, other.port);
+    if (fd < 0)
+        return
+
+    ret = write(fd, buf, len);
+    if (ret < 0)
+        perror("Failed to dispatch");
+
+    close(fd);
 }
 
 static int init_dispatcher_socket(char *ipaddr, short port)
