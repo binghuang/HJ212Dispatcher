@@ -42,7 +42,8 @@ static void *machine_thread(void *arg)
             return (void *)-1;
         }
 
-        dispatcher_send(buf, len);
+        dispatcher_send_other(buf, len);
+        dispatcher_send_photon(buf, len);
 
         memset(mn, 0, MN_SIZE);
         ret = hj212_valid(buf, mn); 

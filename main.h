@@ -11,7 +11,8 @@ void cancel_gather(void *handle);
 #define DISPATCHER_NAME_PHOTON    "photon" 
 #define DISPATCHER_NAME_OTHER    "other" 
 
-void dispatcher_send(const char *buf, int len);
+void dispatcher_send_photon(const char *buf, int len);
+void dispatcher_send_other(const char *buf, int len);
 int init_dispatcher(const char *name, char *servaddr, short port);
 
 unsigned int CRC16_Checkout (char *puchMsg, int usDataLen);
