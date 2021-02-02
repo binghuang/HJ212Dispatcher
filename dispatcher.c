@@ -73,7 +73,7 @@ static void * dispatcher_thread_create(void *arg)
         }
 
         pthread_join(tid, NULL);
-        sleep(2);
+        //sleep(2);
     }
 
     return (void *)0;
@@ -137,7 +137,7 @@ void dispatcher_send_photon(const char *buf, int len)
     if (photon.fd >= 0) {
         ret = write(photon.fd, buf, len);
         if (ret < 0)
-            perror("Failed to dispatch");
+            perror("Failed to dispatch to photon");
     }
 }
 
@@ -152,7 +152,7 @@ void dispatcher_send_other(const char *buf, int len)
 
     ret = write(fd, buf, len);
     if (ret < 0)
-        perror("Failed to dispatch");
+        perror("Failed to dispatch to other");
 
     close(fd);
 }
