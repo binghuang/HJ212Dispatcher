@@ -148,7 +148,7 @@ void dispatcher_send_other(const char *buf, int len)
 
     fd = init_dispatcher_socket(other.serverAddr, other.port);
     if (fd < 0)
-        return
+        return;
 
     ret = write(fd, buf, len);
     if (ret < 0)
