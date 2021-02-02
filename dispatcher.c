@@ -52,7 +52,7 @@ static void * dispatcher_thread(void *arg)
         if (ret != 0)
             continue;
         
-		show_mn_fd();
+		// show_mn_fd();
         device_fd = find_fd(mn);
         gather_send(device_fd, buf, len);
     }
@@ -132,8 +132,8 @@ void dispatcher_send(const char *buf, int len)
     int i;
     int ret;
 
-    printf("%s photon.fd = %d\n", __FUNCTION__, photon.fd);
-    printf("%s other.fd = %d\n", __FUNCTION__, other.fd);
+    // printf("%s photon.fd = %d\n", __FUNCTION__, photon.fd);
+    // printf("%s other.fd = %d\n", __FUNCTION__, other.fd);
 
     if (photon.fd >= 0) {
         ret = write(photon.fd, buf, len);

@@ -47,12 +47,12 @@ static void *machine_thread(void *arg)
         if (ret != 0)
             continue;
 
-        printf("%s, fd = %d\n", __FUNCTION__, fd);
+        // printf("%s, fd = %d\n", __FUNCTION__, fd);
 
-        printf("%s, add_mn_fd\n", __FUNCTION__);
+        // printf("%s, add_mn_fd\n", __FUNCTION__);
         add_mn_fd(mn, fd);
 
-        printf("%s, dispatcher_send\n", __FUNCTION__);
+        // printf("%s, dispatcher_send\n", __FUNCTION__);
         dispatcher_send(buf, len);
     }
     return (void *)0;
