@@ -42,25 +42,14 @@ static void *machine_thread(void *arg)
             return (void *)-1;
         }
 
-        if (write(fd, "a", 1) <= 0) {
-            perror("Failed to send to client");
-            del_mn_fd(fd);
-            close(fd);
-            return (void *)-1;
-        }
+        dispatcher_send(buf, len);
 
         memset(mn, 0, MN_SIZE);
         ret = hj212_valid(buf, mn); 
         if (ret != 0)
             continue;
 
-        // printf("%s, fd = %d\n", __FUNCTION__, fd);
-
-        // printf("%s, add_mn_fd\n", __FUNCTION__);
         add_mn_fd(mn, fd);
-
-        // printf("%s, dispatcher_send\n", __FUNCTION__);
-        dispatcher_send(buf, len);
     }
     return (void *)0;
 }

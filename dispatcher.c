@@ -127,25 +127,34 @@ int init_dispatcher(const char *name, char *servaddr, short port)
     return 0;
 }
 
-void dispatcher_send(const char *buf, int len)
+static pthread_mutex_t dispatcher_photon_mutex;
+void dispatcher_send_photon(const char *buf, int len)
 {
     int i;
     int ret;
 
-    // printf("%s photon.fd = %d\n", __FUNCTION__, photon.fd);
-    // printf("%s other.fd = %d\n", __FUNCTION__, other.fd);
-
+    pthread_mutex_lock(&dispatcher_photon_mutex);
     if (photon.fd >= 0) {
         ret = write(photon.fd, buf, len);
         if (ret < 0)
             perror("Failed to dispatch");
     }
+    pthread_mutex_unlock(&dispatcher_photon_mutex);
+}
 
+static pthread_mutex_t dispatcher_other_mutex;
+void dispatcher_send_other(const char *buf, int len)
+{
+    int i;
+    int ret;
+
+    pthread_mutex_lock(&dispatcher_other_mutex);
     if (other.fd >= 0) {
         ret = write(other.fd, buf, len);
         if (ret < 0)
             perror("Failed to dispatch");
     }
+    pthread_mutex_unlock(&dispatcher_other_mutex);
 }
 
 static int init_dispatcher_socket(char *ipaddr, short port)
