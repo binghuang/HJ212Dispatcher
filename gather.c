@@ -76,7 +76,7 @@ static void * gather_thread(void *arg)
             continue;
         }
 
-        printf("Connected from %s:%d\n", inet_neta(client_addr.sin_addr.s_addr), ntohs(client_addr.sin_port));
+        printf("Connected from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
         if (pthread_attr_init(&attr) < 0) {
             perror("Failed to init thread attr");
