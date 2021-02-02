@@ -64,7 +64,6 @@ static void * gather_thread(void *arg)
     int client_fd = -1;
     struct sockaddr_in client_addr;
     socklen_t addr_len; 
-    char info[64];
     pthread_t tid;
     pthread_attr_t attr;
     int ret = -1;
@@ -77,8 +76,6 @@ static void * gather_thread(void *arg)
             perror("Failed to accept connection");
             continue;
         }
-
-        memset(info, 0, 64);
 
         if (pthread_attr_init(&attr) < 0) {
             perror("Failed to init thread attr");

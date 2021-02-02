@@ -48,10 +48,8 @@ void add_mn_fd(char * mn, int fd)
     if (mn == NULL || fd < 0)
         return;
 
-    printf("%s, %d\n", __FUNCTION__, __LINE__);
     pthread_mutex_lock(&map_mutex);
 
-    printf("%s, %d\n", __FUNCTION__, __LINE__);
     for (i = 0; i < MAP_SIZE; i++) {
         if (strlen(mn_fd[i].mn) == 0)
             continue;
@@ -63,12 +61,10 @@ void add_mn_fd(char * mn, int fd)
             }
     }
 
-    printf("%s, %d\n", __FUNCTION__, __LINE__);
     for (i = 0; i < MAP_SIZE; i++)
         if (strlen(mn_fd[i].mn) == 0)
             break;
 
-    printf("%s, %d\n", __FUNCTION__, __LINE__);
     memcpy(mn_fd[i].mn, mn, strlen(mn));
     mn_fd[i].fd = fd;
 
