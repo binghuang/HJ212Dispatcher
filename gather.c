@@ -70,12 +70,13 @@ static void * gather_thread(void *arg)
 
     while (1) {
         memset(&client_addr, 0, sizeof(struct sockaddr_in));
-        printf("accept connection.....\n");
         client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
         if (client_fd < 0) {
             perror("Failed to accept connection");
             continue;
         }
+
+        printf("Connected from %s:%d\n", inet_neta(client_addr.sin_addr.s_addr), ntohs(client_addr.sin_port));
 
         if (pthread_attr_init(&attr) < 0) {
             perror("Failed to init thread attr");
