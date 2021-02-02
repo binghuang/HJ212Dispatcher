@@ -144,7 +144,6 @@ void dispatcher_send_photon(const char *buf, int len)
 void dispatcher_send_other(const char *buf, int len)
 {
     int fd = -1;
-    char buf[1200];
     int ret = -1;
 
     fd = init_dispatcher_socket(other.serverAddr, other.port);
