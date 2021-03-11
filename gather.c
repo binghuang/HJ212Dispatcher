@@ -26,7 +26,7 @@ void gather_send(int device_fd, const char *buf, int len)
     }
 }
 
-static void dispatch(int fd)
+static int dispatch(int fd)
 {
     char buf[1200];
     char mn[MN_SIZE];
@@ -36,8 +36,8 @@ static void dispatch(int fd)
     memset(buf, 0, 1200);
     if ((len = read(fd, buf, 1200)) <= 0) {
         del_mn_fd(fd);
-        close(fd);
-        return;
+        // close(fd);
+        return 0;
     }
 
     dispatcher_send_other(buf, len);
@@ -47,6 +47,8 @@ static void dispatch(int fd)
     ret = hj212_valid(buf, mn); 
     if (ret == 0)
         add_mn_fd(mn, fd);
+
+    return len;
 }
 
 struct hj212_polls {
@@ -80,21 +82,26 @@ static void * gather_thread(void *arg)
     polls.fds[0].events = POLLIN;
 
     while (1) {
-        ret = poll(polls.fds, polls.nums, 1000);
+        ret = poll(polls.fds, polls.nums, -1);
         if (polls.fds[0].revents & POLLIN) {
-            client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
+            client_fd = accept(polls.fds[0].fd, (struct sockaddr *)&client_addr, &addr_len);
             if (client_fd >= 0) {
                 for (fd_ind = 0; fd_ind < polls.nums; fd_ind++)
                     if (polls.fds[fd_ind].fd == -1)
                         break;
                 if (fd_ind == polls.nums) {
                     polls.nums += 1024;
+                    fds = NULL;
                     fds = malloc(sizeof(struct hj212_polls) * polls.nums);
                     if (fds) {
                         memset(fds, 0, polls.nums * sizeof(struct  pollfd));
                         for (fd_ind = 0; fd_ind < polls.nums; fd_ind++)
                             polls.fds[fd_ind].fd = -1;
                         memcpy(fds, polls.fds, fd_ind);
+
+                        free(polls.fds);
+                        polls.fds = NULL;
+                        polls.fds = fds;
                     } else {
                         polls.nums -= 1024;
                         printf("Cannot increase poll space!!\n"); 
@@ -107,19 +114,33 @@ static void * gather_thread(void *arg)
                 }
             } else
                 perror("accept");
+
+            continue;
         }
 
         for (fd_ind = 1; fd_ind < polls.nums; fd_ind++) {
             if (polls.fds[fd_ind].fd != -1) {
-                if (polls.fds[fd_ind].revents != 0)
-                    dispatch(polls.fds[fd_ind].fd);
-                if (polls.fds[fd_ind].revents & (POLLHUP | POLLERR)) {
-                    polls.fds[fd_ind].fd = -1;
-                    polls.fds[fd_ind].events = 0;
-                }                
+                if (polls.fds[fd_ind].revents != 0) {
+                    ret = dispatch(polls.fds[fd_ind].fd);
+                    if (ret == 0) {
+                        // printf("disconnected\n");
+                        polls.fds[fd_ind].fd = -1;
+                        polls.fds[fd_ind].events = 0;
+                        close(polls.fds[fd_ind].fd);
+                    }
+                    // printf("events[%d]@%d happend!\n", polls.fds[fd_ind].revents, fd_ind);
+                }
+
+                // if (polls.fds[fd_ind].revents & (POLLHUP | POLLERR)) {
+                //     polls.fds[fd_ind].fd = -1;
+                //     polls.fds[fd_ind].events = 0;
+                //     close(polls.fds[fd_ind].fd);
+                // }                
             }
         }        
     }
+
+    free(polls.fds);
 
     return (void *)0;
 }
