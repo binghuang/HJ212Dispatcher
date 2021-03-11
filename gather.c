@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <pthread.h>
+#include <poll.h>
 
 #include "map.h"
 #include "hj212.h"
@@ -25,35 +26,33 @@ void gather_send(int device_fd, const char *buf, int len)
     }
 }
 
-static void *machine_thread(void *arg)
+static void dispatch(int fd)
 {
-    int fd = (int)arg;
     char buf[1200];
     char mn[MN_SIZE];
     int ret = -1;
     int len = 0;
 
-    while (1) {
-        memset(buf, 0, 1200);
-        if ((len = read(fd, buf, 1200)) <= 0) {
-            perror("Failed to read from Client");
-            del_mn_fd(fd);
-            close(fd);
-            return (void *)-1;
-        }
-
-        dispatcher_send_other(buf, len);
-        dispatcher_send_photon(buf, len);
-
-        memset(mn, 0, MN_SIZE);
-        ret = hj212_valid(buf, mn); 
-        if (ret != 0)
-            continue;
-
-        add_mn_fd(mn, fd);
+    memset(buf, 0, 1200);
+    if ((len = read(fd, buf, 1200)) <= 0) {
+        del_mn_fd(fd);
+        close(fd);
+        return;
     }
-    return (void *)0;
+
+    dispatcher_send_other(buf, len);
+    dispatcher_send_photon(buf, len);
+
+    memset(mn, 0, MN_SIZE);
+    ret = hj212_valid(buf, mn); 
+    if (ret == 0)
+        add_mn_fd(mn, fd);
 }
+
+struct hj212_polls {
+    struct  pollfd *fds;
+    int nums;
+};
 
 static void * gather_thread(void *arg)
 {
@@ -61,36 +60,65 @@ static void * gather_thread(void *arg)
     int client_fd = -1;
     struct sockaddr_in client_addr;
     socklen_t addr_len; 
-    pthread_t tid;
-    pthread_attr_t attr;
     int ret = -1;
+    struct hj212_polls polls;
+    struct pollfd *fds;
+    int fd_ind = -1;
+
+    polls.nums = 1024;
+    polls.fds = malloc(sizeof(struct hj212_polls) * polls.nums);
+    if (!polls.fds) {
+        printf("memory not sufficent!!\n");
+        return (void *)-1;
+    }
+
+    memset(polls.fds, 0, polls.nums * sizeof(struct  pollfd));
+    for (fd_ind = 0; fd_ind < polls.nums; fd_ind++)
+        polls.fds[fd_ind].fd = -1;
+
+    polls.fds[0].fd = fd;
+    polls.fds[0].events = POLLIN;
 
     while (1) {
-        memset(&client_addr, 0, sizeof(struct sockaddr_in));
-        client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
-        if (client_fd < 0) {
-            perror("Failed to accept connection");
-            continue;
+        ret = poll(polls.fds, polls.nums, 1000);
+        if (polls.fds[0].revents & POLLIN) {
+            client_fd = accept(fd, (struct sockaddr *)&client_addr, &addr_len);
+            if (client_fd >= 0) {
+                for (fd_ind = 0; fd_ind < polls.nums; fd_ind++)
+                    if (polls.fds[fd_ind].fd == -1)
+                        break;
+                if (fd_ind == polls.nums) {
+                    polls.nums += 1024;
+                    fds = malloc(sizeof(struct hj212_polls) * polls.nums);
+                    if (fds) {
+                        memset(fds, 0, polls.nums * sizeof(struct  pollfd));
+                        for (fd_ind = 0; fd_ind < polls.nums; fd_ind++)
+                            polls.fds[fd_ind].fd = -1;
+                        memcpy(fds, polls.fds, fd_ind);
+                    } else {
+                        polls.nums -= 1024;
+                        printf("Cannot increase poll space!!\n"); 
+                    }
+
+                }
+                if (fd_ind != polls.nums) {
+                    polls.fds[fd_ind].fd = client_fd;
+                    polls.fds[fd_ind].events = POLLIN;
+                }
+            } else
+                perror("accept");
         }
 
-        printf("Connected from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-        if (pthread_attr_init(&attr) < 0) {
-            perror("Failed to init thread attr");
-            continue;
-        }
-        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) < 0) {
-            perror("Failed to set deatach state");
-            continue;
-        }
-        ret = pthread_create(&tid, &attr, machine_thread, (void *)client_fd); 
-        if (ret < 0) {
-            perror("Failed to create machine thread");
-            if (pthread_attr_destroy(&attr) < 0)
-                perror("Failed to destory thread attr");
-            continue;
-        }
-        pthread_attr_destroy(&attr);
+        for (fd_ind = 1; fd_ind < polls.nums; fd_ind++) {
+            if (polls.fds[fd_ind].fd != -1) {
+                if (polls.fds[fd_ind].revents != 0)
+                    dispatch(polls.fds[fd_ind].fd);
+                if (polls.fds[fd_ind].revents & (POLLHUP | POLLERR)) {
+                    polls.fds[fd_ind].fd = -1;
+                    polls.fds[fd_ind].events = 0;
+                }                
+            }
+        }        
     }
 
     return (void *)0;
